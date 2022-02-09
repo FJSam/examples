@@ -11,6 +11,7 @@ import torch.utils.data
 import torchvision.datasets as dset
 import torchvision.transforms as transforms
 import torchvision.utils as vutils
+from torch.utils.tensorboard import SummaryWriter
 
 
 parser = argparse.ArgumentParser()
@@ -36,6 +37,8 @@ parser.add_argument('--classes', default='bedroom', help='comma separated list o
 
 opt = parser.parse_args()
 print(opt)
+
+writer = SummaryWriter()
 
 try:
     os.makedirs(opt.outf)
@@ -108,7 +111,6 @@ ngpu = int(opt.ngpu)
 nz = int(opt.nz)
 ngf = int(opt.ngf)
 ndf = int(opt.ndf)
-
 
 # custom weights initialization called on netG and netD
 def weights_init(m):
@@ -257,6 +259,10 @@ for epoch in range(opt.niter):
         print('[%d/%d][%d/%d] Loss_D: %.4f Loss_G: %.4f D(x): %.4f D(G(z)): %.4f / %.4f'
               % (epoch, opt.niter, i, len(dataloader),
                  errD.item(), errG.item(), D_x, D_G_z1, D_G_z2))
+        
+        writer.add_scalar("Loss_D", errD.item(), epoch)
+        writer.add_scalar("Loss_G", errG.item(), epoch)
+        
         if i % 100 == 0:
             vutils.save_image(real_cpu,
                     '%s/real_samples.png' % opt.outf,
@@ -268,6 +274,7 @@ for epoch in range(opt.niter):
 
         if opt.dry_run:
             break
+            
     # do checkpointing
     torch.save(netG.state_dict(), '%s/netG_epoch_%d.pth' % (opt.outf, epoch))
     torch.save(netD.state_dict(), '%s/netD_epoch_%d.pth' % (opt.outf, epoch))
